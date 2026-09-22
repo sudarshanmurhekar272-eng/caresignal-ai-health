@@ -1,0 +1,14 @@
+{
+  "name": "caresignal-fullstack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CareSignal primary disease prediction educational prototype",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

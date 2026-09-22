@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="CareSignal educational AI health insights prototype">
+  <title>CareSignal — AI Health Insights</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <button class="brand" data-route="landing"><span class="brand-mark">✦</span> CareSignal</button>
+    <nav id="public-nav"><button class="link-btn" data-route="login">Log in</button><button class="btn primary" data-route="register">Create account</button></nav>
+    <nav id="user-nav" class="hidden"><button class="btn soft" data-route="predict">+ New prediction</button><button class="avatar" data-route="profile">AS</button></nav>
+  </header>
+
+  <main id="landing-view" class="view">
+    <section class="hero wrap">
+      <div class="hero-copy"><span class="eyebrow">✦ AI-assisted health insights</span><h1>Understand your symptoms with more clarity.</h1><p>Organize symptoms, explore preliminary health information, and know when professional care may be needed.</p><div class="actions"><button class="btn primary" data-route="predict">Try a prediction →</button><button class="btn soft" data-route="dashboard">Explore dashboard</button></div><div class="trust"><span>✓ Privacy-first design</span><span>✓ Safety-led guidance</span><span>✓ No prescriptions</span></div></div>
+      <div class="hero-art"><div class="orbit"><div class="heart">♡</div></div><div class="float-card one"><small>Latest insight</small><b>Wellness overview ↗</b></div><div class="float-card two"><small>Model response</small><b>Preliminary only</b></div></div>
+    </section>
+    <section class="wrap section"><div class="section-title"><span class="eyebrow">Simple by design</span><h2>A calmer way to start the conversation.</h2><p>Get organized before you speak with a healthcare professional, without turning an AI result into a diagnosis.</p></div><div class="feature-grid"><article class="card"><i>⌁</i><h3>Describe symptoms</h3><p>Select symptoms, add context, and record how long you have felt them.</p></article><article class="card"><i>✦</i><h3>Explore possibilities</h3><p>See a preliminary model result with transparent uncertainty language.</p></article><article class="card"><i>♡</i><h3>Know your next step</h3><p>Review general information, warning signs, and when to seek care.</p></article></div><div class="notice"><b>Important:</b> CareSignal is an educational prototype. AI-generated predictions are informational only and are not a substitute for professional medical diagnosis or treatment.</div></section>
+  </main>
+
+  <main id="auth-view" class="view hidden"><div class="auth card"><span class="eyebrow" id="auth-eyebrow">Welcome back</span><h2 id="auth-title">Sign in to CareSignal</h2><p id="auth-subtitle" class="muted">Continue your private health insights journey.</p><form id="auth-form"><div id="register-fields" class="hidden"><label>Full name<input name="name" placeholder="Alex Sharma"></label><label>Mobile number<input name="mobile" placeholder="+91 98765 43210"></label><div class="cols"><label>Age<input name="age" type="number" placeholder="28"></label><label>Gender<select name="gender"><option value="">Select</option><option>Female</option><option>Male</option><option>Other</option></select></label></div></div><label>Email address<input name="email" type="email" required placeholder="you@example.com"></label><label>Password<input name="password" type="password" required placeholder="At least 8 characters"></label><div id="auth-error" class="error hidden"></div><button class="btn primary full" id="auth-submit">Sign in securely</button></form><p class="center muted small" id="auth-switch">New to CareSignal? <button class="text-btn" data-route="register">Create an account</button></p></div></main>
+
+  <main id="app-view" class="view hidden"><div class="app-layout"><aside class="sidebar"><div class="side-brand"><span class="brand-mark">✦</span> CareSignal</div><button class="side-link active" data-route="dashboard">⌂ <span>Overview</span></button><button class="side-link" data-route="predict">✦ <span>New prediction</span></button><button class="side-link" data-route="history">◷ <span>Prediction history</span></button><button class="side-link" data-route="profile">♙ <span>My profile</span></button><button class="side-link logout" id="logout">↪ <span>Log out</span></button></aside><section class="content"><div id="dashboard-page" class="subpage"></div><div id="predict-page" class="subpage hidden"></div><div id="result-page" class="subpage hidden"></div><div id="history-page" class="subpage hidden"></div><div id="profile-page" class="subpage hidden"></div></section></div></main>
+
+  <button id="chat-toggle" class="chat-toggle" aria-label="Open health assistant">☵</button><section id="chat-panel" class="chat-panel hidden"><header><span class="avatar">✦</span><div><b>CareSignal assistant</b><small>Educational health information</small></div></header><div id="chat-messages" class="chat-messages"><div class="bubble bot">Hi! I can explain the app, help organize symptoms, or clarify a preliminary result. I can’t diagnose or prescribe.</div></div><form id="chat-form"><input id="chat-input" placeholder="Ask a health question..." autocomplete="off"><button>↑</button></form></section>
+  <div id="toast" class="toast"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
