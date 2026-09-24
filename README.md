@@ -59,10 +59,11 @@ The app stores prototype data in `data/store.json`. That file is ignored by Git 
 | DELETE | `/api/predictions/:id` | Token |
 | POST | `/api/chat` | No |
 | GET | `/api/doctors/nearby?lat=<lat>&lon=<lon>` | No |
+| GET | `/api/doctors/search?q=<city-or-pincode>` | No |
 
 ## Nearby care
 
-The “Find nearby care” screen asks for browser location permission, searches a roughly 5 km radius, and returns listed hospitals, clinics, and doctors with any available address, phone, website, distance, and map link. CareSignal does not save the coordinates. Directory availability and contact details come from OpenStreetMap and may be incomplete, so verify details before traveling. For an emergency, contact the local emergency service instead of waiting for directory results.
+The “Find nearby care” screen can ask for browser location permission or accept a city/pincode fallback, then searches a roughly 5 km radius and returns listed hospitals, clinics, and doctors with any available address, phone, website, distance, and map link. CareSignal does not save the coordinates. Directory availability and contact details come from OpenStreetMap and may be incomplete, so verify details before traveling. For an emergency, contact the local emergency service instead of waiting for directory results.
 
 ## Prediction service
 

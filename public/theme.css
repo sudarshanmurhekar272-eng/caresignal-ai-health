@@ -38,6 +38,12 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 15px;
 }
+.care-search {
+  display: flex;
+  gap: 10px;
+  margin: 18px 0;
+}
+.care-search input { flex: 1; }
 .care-card {
   padding: 20px;
   animation: page-enter .35s ease both;
@@ -107,6 +113,8 @@ body.dark .theme-toggle { color: var(--ink); background: var(--surface); border-
 @media (max-width: 700px) {
   .care-intro { display: block; }
   .care-intro .btn { margin-top: 15px; }
+  .care-search { display: block; }
+  .care-search .btn { width: 100%; margin-top: 10px; }
   .care-grid { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {

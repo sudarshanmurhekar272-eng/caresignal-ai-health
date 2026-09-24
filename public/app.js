@@ -94,21 +94,37 @@ function renderHistory() {
   document.querySelectorAll(".delete-pred").forEach((button) => button.addEventListener("click", async () => { if (!confirm("Delete this prediction history item?")) return; await api(`/api/predictions/${button.dataset.id}`, { method:"DELETE" }); state.predictions = state.predictions.filter((item) => item.id !== button.dataset.id); renderHistory(); toast("History item deleted"); }));
 }
 function renderCare() {
-  $("care-page").innerHTML = `<div class="care-intro"><div><span class="eyebrow">Local support</span><h1 class="page-title">Find nearby care</h1><p class="muted">Use your device location to find nearby hospitals, clinics, and doctors. Your coordinates are used for this search and are not saved by CareSignal.</p></div><button class="btn primary" id="find-care">⌖ Use my location</button></div><div class="notice">For severe chest pain, severe breathing difficulty, loss of consciousness, severe bleeding, or stroke-like symptoms, contact your local emergency service immediately instead of waiting for search results.</div><div id="care-status" class="empty-care" style="margin-top:18px">Select “Use my location” to search within about 5 km.</div><div id="care-results" class="care-grid" style="margin-top:18px"></div>`;
+  $("care-page").innerHTML = `<div class="care-intro"><div><span class="eyebrow">Local support</span><h1 class="page-title">Find nearby care</h1><p class="muted">Use your location or enter a city/pincode to find nearby hospitals, clinics, and doctors. CareSignal does not save your coordinates.</p></div><button class="btn primary" id="find-care">⌖ Use my location</button></div><div class="care-search"><input id="care-query" placeholder="Search by city or pincode, e.g. Nagpur 440001"><button class="btn soft" id="search-care">Search location</button></div><div class="notice">For severe chest pain, severe breathing difficulty, loss of consciousness, severe bleeding, or stroke-like symptoms, contact your local emergency service immediately instead of waiting for search results.</div><div id="care-status" class="empty-care" style="margin-top:18px">Choose a search method to find care within about 5 km.</div><div id="care-results" class="care-grid" style="margin-top:18px"></div>`;
   $("find-care").addEventListener("click", findNearbyCare);
+  $("search-care").addEventListener("click", searchCareByText);
+  $("care-query").addEventListener("keydown", (event) => { if (event.key === "Enter") searchCareByText(); });
+}
+function renderCareProviders(data, label) {
+  const status = $("care-status");
+  const results = $("care-results");
+  results.innerHTML = data.providers.length ? data.providers.map((provider) => `<article class="card care-card"><span class="care-type">${escapeHtml(provider.type)}</span><h3>${escapeHtml(provider.name)}</h3><div class="care-meta"><span>⌖ ${escapeHtml(provider.address)}</span><span>◉ ${provider.distanceKm} km away</span>${provider.phone ? `<span>☎ ${escapeHtml(provider.phone)}</span>` : ""}</div><div class="care-links">${provider.phone ? `<a class="btn soft" href="tel:${escapeHtml(provider.phone)}">Call</a>` : ""}${provider.website ? `<a class="btn soft" href="${escapeHtml(provider.website)}" target="_blank" rel="noopener">Website</a>` : ""}<a class="btn primary" href="${escapeHtml(provider.mapUrl)}" target="_blank" rel="noopener">Open map</a></div></article>`).join("") : `<div class="empty-care">No nearby providers were listed. Try a wider-area city or pincode search.</div>`;
+  status.textContent = data.providers.length ? `Found ${data.providers.length} nearby care options${label ? ` near ${label}` : ""}.` : "No nearby providers were listed.";
 }
 async function findNearbyCare() {
   const status = $("care-status");
-  const results = $("care-results");
   if (!navigator.geolocation) { status.textContent = "Location is not available in this browser. Search your local health service directly."; return; }
   status.textContent = "Requesting your location…";
   navigator.geolocation.getCurrentPosition(async (position) => {
     try {
       const data = await api(`/api/doctors/nearby?lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
-      results.innerHTML = data.providers.length ? data.providers.map((provider) => `<article class="card care-card"><span class="care-type">${escapeHtml(provider.type)}</span><h3>${escapeHtml(provider.name)}</h3><div class="care-meta"><span>⌖ ${escapeHtml(provider.address)}</span><span>◉ ${provider.distanceKm} km away</span>${provider.phone ? `<span>☎ ${escapeHtml(provider.phone)}</span>` : ""}</div><div class="care-links">${provider.phone ? `<a class="btn soft" href="tel:${escapeHtml(provider.phone)}">Call</a>` : ""}${provider.website ? `<a class="btn soft" href="${escapeHtml(provider.website)}" target="_blank" rel="noopener">Website</a>` : ""}<a class="btn primary" href="${escapeHtml(provider.mapUrl)}" target="_blank" rel="noopener">Open map</a></div></article>`).join("") : `<div class="empty-care">No nearby providers were listed. Try a wider-area local search.</div>`;
-      status.textContent = data.providers.length ? `Found ${data.providers.length} nearby care options.` : "No nearby providers were listed.";
+      renderCareProviders(data);
     } catch (error) { status.textContent = error.message; }
   }, () => { status.textContent = "Location permission was not granted. You can search a local hospital or doctor directly instead."; }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+}
+async function searchCareByText() {
+  const query = $("care-query").value.trim();
+  const status = $("care-status");
+  if (query.length < 3) { status.textContent = "Enter at least 3 characters for a city or pincode."; return; }
+  status.textContent = "Searching that location…";
+  try {
+    const data = await api(`/api/doctors/search?q=${encodeURIComponent(query)}`);
+    renderCareProviders(data, data.location);
+  } catch (error) { status.textContent = error.message; }
 }
 function renderProfile() { $("profile-page").innerHTML = `<div class="card panel profile-form"><span class="eyebrow">Account settings</span><h1 class="page-title">My profile</h1><p class="muted">Keep your basic information up to date.</p><div class="cols"><label>Full name<input id="profile-name" value="${escapeHtml(state.user.name)}"></label><label>Email<input value="${escapeHtml(state.user.email)}" disabled></label><label>Mobile number<input id="profile-mobile" value="${escapeHtml(state.user.mobile)}"></label><label>Age<input id="profile-age" type="number" value="${escapeHtml(state.user.age || "")}"></label><label>Gender<select id="profile-gender"><option ${state.user.gender === "" ? "selected" : ""}>Select</option><option ${state.user.gender === "Female" ? "selected" : ""}>Female</option><option ${state.user.gender === "Male" ? "selected" : ""}>Male</option><option ${state.user.gender === "Other" ? "selected" : ""}>Other</option></select></label></div><button class="btn primary" id="save-profile">Save profile changes</button></div>`; $("save-profile").addEventListener("click", async () => { const data = await api("/api/user/profile", { method:"PUT", body:{ name:$("profile-name").value, mobile:$("profile-mobile").value, age:$("profile-age").value, gender:$("profile-gender").value } }); state.user = data.user; toast("Profile changes saved"); }); }
 async function sendChat(event) { event.preventDefault(); const input = $("chat-input"); const text = input.value.trim(); if (!text) return; const messages = $("chat-messages"); messages.insertAdjacentHTML("beforeend", `<div class="bubble user">${escapeHtml(text)}</div>`); input.value = ""; try { const data = await api("/api/chat", { method:"POST", body:{ message:text } }); messages.insertAdjacentHTML("beforeend", `<div class="bubble bot">${escapeHtml(data.reply)}</div>`); messages.scrollTop = messages.scrollHeight; } catch { toast("Chat service unavailable"); } }

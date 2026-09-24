@@ -145,6 +145,16 @@ async function nearbyCare(latitude, longitude) {
   }).filter((place) => Number.isFinite(place.latitude) && Number.isFinite(place.longitude)).sort((a, b) => a.distanceKm - b.distanceKm).slice(0, 20);
 }
 
+async function geocodeCare(query) {
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(query)}`, {
+    headers: { "accept": "application/json", "user-agent": "CareSignal educational prototype" }
+  });
+  if (!response.ok) throw new Error("Location search is temporarily unavailable.");
+  const places = await response.json();
+  if (!places.length) return null;
+  return { latitude: Number(places[0].lat), longitude: Number(places[0].lon), label: places[0].display_name };
+}
+
 async function api(req, res, pathname, searchParams = new URLSearchParams()) {
   if (!rateLimit(req, pathname, pathname.includes("auth") ? 15 : 60)) return json(429, { error: "Too many requests. Please try again shortly." });
   const store = await readStore();
@@ -200,6 +210,18 @@ async function api(req, res, pathname, searchParams = new URLSearchParams()) {
       return json(200, { providers: await nearbyCare(latitude, longitude), source: "OpenStreetMap contributors" });
     } catch {
       return json(503, { error: "Nearby care search is temporarily unavailable. Use the emergency or local health-service link for urgent needs." });
+    }
+  }
+
+  if (method === "GET" && pathname === "/api/doctors/search") {
+    const query = String(searchParams.get("q") || "").trim();
+    if (query.length < 3) return json(400, { error: "Enter a city, neighborhood, or pincode." });
+    try {
+      const location = await geocodeCare(query);
+      if (!location) return json(404, { error: "That location could not be found. Try a nearby city or pincode." });
+      return json(200, { location: location.label, providers: await nearbyCare(location.latitude, location.longitude), source: "OpenStreetMap contributors" });
+    } catch {
+      return json(503, { error: "Location search is temporarily unavailable. Try again shortly." });
     }
   }
 
