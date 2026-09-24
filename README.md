@@ -15,6 +15,10 @@ CareSignal is a full-stack educational prototype for **Primary Disease Predictio
 - Transparent prediction service in `ml/predict.js`
 - Prediction history with deletion
 - Floating chatbot backed by `POST /api/chat`
+- Disease-specific general self-care, prevention, and escalation guidance
+- Animated page transitions and reduced-motion support
+- Persistent dark/light theme toggle
+- Nearby hospitals, clinics, and doctors via browser location permission and OpenStreetMap data
 - JSON persistence for local prototype use
 - Basic per-IP rate limiting and input validation
 - No confidence score is shown because this version does not use a validated probabilistic model
@@ -54,6 +58,11 @@ The app stores prototype data in `data/store.json`. That file is ignored by Git 
 | GET | `/api/predictions/:id` | Token |
 | DELETE | `/api/predictions/:id` | Token |
 | POST | `/api/chat` | No |
+| GET | `/api/doctors/nearby?lat=<lat>&lon=<lon>` | No |
+
+## Nearby care
+
+The “Find nearby care” screen asks for browser location permission, searches a roughly 5 km radius, and returns listed hospitals, clinics, and doctors with any available address, phone, website, distance, and map link. CareSignal does not save the coordinates. Directory availability and contact details come from OpenStreetMap and may be incomplete, so verify details before traveling. For an emergency, contact the local emergency service instead of waiting for directory results.
 
 ## Prediction service
 

@@ -107,7 +107,45 @@ function chatbotReply(message) {
   return "I can explain how CareSignal works, help organize symptom information, and clarify safety guidance. I cannot diagnose or replace professional care.";
 }
 
-async function api(req, res, pathname) {
+function distanceKm(lat1, lon1, lat2, lon2) {
+  const radians = (value) => (value * Math.PI) / 180;
+  const earthRadius = 6371;
+  const dLat = radians(lat2 - lat1);
+  const dLon = radians(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(dLon / 2) ** 2;
+  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function nearbyCare(latitude, longitude) {
+  const overpassQuery = `[out:json][timeout:15];(nwr["amenity"~"doctors|clinic|hospital"](around:5000,${latitude},${longitude}););out center tags;`;
+  const response = await fetch("https://overpass-api.de/api/interpreter", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": "CareSignal educational prototype" },
+    body: `data=${encodeURIComponent(overpassQuery)}`
+  });
+  if (!response.ok) throw new Error("Nearby care search is temporarily unavailable.");
+  const payload = await response.json();
+  return (payload.elements || []).map((place) => {
+    const tags = place.tags || {};
+    const placeLatitude = place.lat ?? place.center?.lat;
+    const placeLongitude = place.lon ?? place.center?.lon;
+    const address = [tags["addr:housenumber"], tags["addr:street"], tags["addr:city"], tags["addr:postcode"]].filter(Boolean).join(", ");
+    return {
+      id: place.id,
+      name: tags.name || "Unnamed care provider",
+      type: tags.amenity === "hospital" ? "Hospital" : tags.amenity === "clinic" ? "Clinic" : "Doctor",
+      address: address || "Address not listed",
+      phone: tags.phone || tags["contact:phone"] || "",
+      website: tags.website || tags["contact:website"] || "",
+      latitude: placeLatitude,
+      longitude: placeLongitude,
+      distanceKm: Number(distanceKm(latitude, longitude, placeLatitude, placeLongitude).toFixed(1)),
+      mapUrl: `https://www.openstreetmap.org/?mlat=${placeLatitude}&mlon=${placeLongitude}#map=18/${placeLatitude}/${placeLongitude}`
+    };
+  }).filter((place) => Number.isFinite(place.latitude) && Number.isFinite(place.longitude)).sort((a, b) => a.distanceKm - b.distanceKm).slice(0, 20);
+}
+
+async function api(req, res, pathname, searchParams = new URLSearchParams()) {
   if (!rateLimit(req, pathname, pathname.includes("auth") ? 15 : 60)) return json(429, { error: "Too many requests. Please try again shortly." });
   const store = await readStore();
   const user = userFromRequest(req, store);
@@ -150,6 +188,19 @@ async function api(req, res, pathname) {
   if (method === "POST" && pathname === "/api/chat") {
     const data = await body(req);
     return json(200, { reply: chatbotReply(data.message), disclaimer: "Informational only; not medical advice." });
+  }
+
+  if (method === "GET" && pathname === "/api/doctors/nearby") {
+    const latitude = Number(searchParams.get("lat"));
+    const longitude = Number(searchParams.get("lon"));
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+      return json(400, { error: "A valid location is required to search nearby care." });
+    }
+    try {
+      return json(200, { providers: await nearbyCare(latitude, longitude), source: "OpenStreetMap contributors" });
+    } catch {
+      return json(503, { error: "Nearby care search is temporarily unavailable. Use the emergency or local health-service link for urgent needs." });
+    }
   }
 
   if (!user) return json(401, { error: "Authentication required." });
@@ -205,7 +256,7 @@ async function serveStatic(req, pathname) {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-    const result = url.pathname.startsWith("/api/") ? await api(req, res, url.pathname) : await serveStatic(req, url.pathname) || json(404, { error: "Not found." });
+    const result = url.pathname.startsWith("/api/") ? await api(req, res, url.pathname, url.searchParams) : await serveStatic(req, url.pathname) || json(404, { error: "Not found." });
     res.writeHead(result.status, { ...result.headers, "cache-control": "no-store" });
     res.end(result.body);
   } catch (error) {

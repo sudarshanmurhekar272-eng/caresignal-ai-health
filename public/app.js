@@ -12,7 +12,7 @@ async function api(path, options = {}) {
 function toast(text) { const node = $("toast"); node.textContent = text; node.classList.remove("hidden"); setTimeout(() => node.classList.add("hidden"), 2600); }
 function navigate(route) {
   state.route = route;
-  const authenticated = ["dashboard", "predict", "result", "history", "profile"].includes(route);
+  const authenticated = ["dashboard", "predict", "result", "history", "care", "profile"].includes(route);
   $("landing-view").classList.toggle("hidden", route !== "landing");
   $("auth-view").classList.toggle("hidden", !["login", "register"].includes(route));
   $("app-view").classList.toggle("hidden", !authenticated);
@@ -53,6 +53,7 @@ function renderSubpage(route) {
   if (route === "dashboard") renderDashboard();
   if (route === "predict") renderPredict();
   if (route === "history") renderHistory();
+  if (route === "care") renderCare();
   if (route === "profile") renderProfile();
 }
 async function loadData() {
@@ -85,15 +86,45 @@ async function submitPrediction() {
   try { const data = await api("/api/predict", { method: "POST", body: { symptoms: state.selected, age: $("predict-age").value, duration: $("predict-duration").value, severity: $("predict-severity").value } }); state.predictions.unshift(data.prediction); renderResult(data.prediction); navigate("result"); } catch (error) { toast(error.message); }
 }
 function renderResult(prediction) {
-  $("result-page").innerHTML = `<div class="card panel"><div class="result-hero"><div><span class="eyebrow">Preliminary model result</span><div class="result-name">${escapeHtml(prediction.prediction)}</div><p class="muted">Based on the information provided, this is one possible explanation to discuss with a professional.</p></div><div class="score"><b>—</b><span>No score claimed</span></div></div><div class="notice" style="margin-top:20px"><b>Not a diagnosis:</b> This result is generated for informational purposes only. Please consult a qualified healthcare professional for medical evaluation.</div>${prediction.urgent ? `<div class="alert danger">⚠ <span><b>Urgent symptoms were included.</b> Seek immediate medical care.</span></div>` : ""}<div class="result-grid"><div class="info-box"><h3>Symptoms considered</h3><p>${escapeHtml(prediction.symptoms.join(", "))}</p></div><div class="info-box"><h3>General description</h3><p>${escapeHtml(prediction.description)}</p></div><div class="info-box"><h3>General self-care</h3><ul>${prediction.selfCare.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div><div class="info-box"><h3>When to seek care</h3><p>${escapeHtml(prediction.contactDoctor)}</p><p><b>Emergency signs:</b> ${escapeHtml(prediction.emergencySigns.join(", "))}</p></div></div><div class="actions"><button class="btn primary" data-route="history">View saved history</button><button class="btn soft" onclick="window.print()">Print result</button><button class="btn link-btn" data-route="predict">Try again</button></div></div>`;
+  $("result-page").innerHTML = `<div class="card panel"><div class="result-hero"><div><span class="eyebrow">Preliminary model result</span><div class="result-name">${escapeHtml(prediction.prediction)}</div><p class="muted">Based on the information provided, this is one possible explanation to discuss with a professional.</p></div><div class="score"><b>—</b><span>No score claimed</span></div></div><div class="notice" style="margin-top:20px"><b>Not a diagnosis:</b> This result is generated for informational purposes only. Please consult a qualified healthcare professional for medical evaluation.</div>${prediction.urgent ? `<div class="alert danger">⚠ <span><b>Urgent symptoms were included.</b> Seek immediate medical care.</span></div>` : ""}<div class="result-grid"><div class="info-box"><h3>Symptoms considered</h3><p>${escapeHtml(prediction.symptoms.join(", "))}</p></div><div class="info-box"><h3>General description</h3><p>${escapeHtml(prediction.description)}</p></div><div class="info-box"><h3>General self-care</h3><ul>${prediction.selfCare.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div><div class="info-box"><h3>Prevention ideas</h3><p>${escapeHtml(prediction.prevention || "Discuss prevention with a qualified healthcare professional.")}</p></div><div class="info-box"><h3>When to seek care</h3><p>${escapeHtml(prediction.contactDoctor)}</p><p><b>Emergency signs:</b> ${escapeHtml(prediction.emergencySigns.join(", "))}</p></div></div><div class="actions"><button class="btn primary" data-route="history">View saved history</button><button class="btn soft" data-route="care">Find nearby care</button><button class="btn soft" onclick="window.print()">Print result</button><button class="btn link-btn" data-route="predict">Try again</button></div></div>`;
 }
 function renderHistory() {
   $("history-page").innerHTML = `<div class="dash-head"><div><span class="eyebrow">Your records</span><h1 class="page-title">Prediction history</h1><p class="muted">Only the minimum information needed is stored in this prototype.</p></div><button class="btn primary" data-route="predict">+ New prediction</button></div><div class="card panel"><div class="panel-head"><h3>Recent activity</h3><input class="search" style="max-width:220px;padding:9px" placeholder="Search history..." id="history-search"></div><div id="history-list">${state.predictions.length ? state.predictions.map(historyRow).join("") : `<p class="muted">No saved predictions yet.</p>`}</div></div><div class="notice" style="margin-top:18px">Privacy note: production should provide export and deletion controls, explain retention clearly, and never expose health information unnecessarily.</div>`;
   $("history-search")?.addEventListener("input", (event) => document.querySelectorAll("[data-history]").forEach((row) => row.classList.toggle("hidden", !row.dataset.history.includes(event.target.value.toLowerCase()))));
   document.querySelectorAll(".delete-pred").forEach((button) => button.addEventListener("click", async () => { if (!confirm("Delete this prediction history item?")) return; await api(`/api/predictions/${button.dataset.id}`, { method:"DELETE" }); state.predictions = state.predictions.filter((item) => item.id !== button.dataset.id); renderHistory(); toast("History item deleted"); }));
 }
+function renderCare() {
+  $("care-page").innerHTML = `<div class="care-intro"><div><span class="eyebrow">Local support</span><h1 class="page-title">Find nearby care</h1><p class="muted">Use your device location to find nearby hospitals, clinics, and doctors. Your coordinates are used for this search and are not saved by CareSignal.</p></div><button class="btn primary" id="find-care">⌖ Use my location</button></div><div class="notice">For severe chest pain, severe breathing difficulty, loss of consciousness, severe bleeding, or stroke-like symptoms, contact your local emergency service immediately instead of waiting for search results.</div><div id="care-status" class="empty-care" style="margin-top:18px">Select “Use my location” to search within about 5 km.</div><div id="care-results" class="care-grid" style="margin-top:18px"></div>`;
+  $("find-care").addEventListener("click", findNearbyCare);
+}
+async function findNearbyCare() {
+  const status = $("care-status");
+  const results = $("care-results");
+  if (!navigator.geolocation) { status.textContent = "Location is not available in this browser. Search your local health service directly."; return; }
+  status.textContent = "Requesting your location…";
+  navigator.geolocation.getCurrentPosition(async (position) => {
+    try {
+      const data = await api(`/api/doctors/nearby?lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
+      results.innerHTML = data.providers.length ? data.providers.map((provider) => `<article class="card care-card"><span class="care-type">${escapeHtml(provider.type)}</span><h3>${escapeHtml(provider.name)}</h3><div class="care-meta"><span>⌖ ${escapeHtml(provider.address)}</span><span>◉ ${provider.distanceKm} km away</span>${provider.phone ? `<span>☎ ${escapeHtml(provider.phone)}</span>` : ""}</div><div class="care-links">${provider.phone ? `<a class="btn soft" href="tel:${escapeHtml(provider.phone)}">Call</a>` : ""}${provider.website ? `<a class="btn soft" href="${escapeHtml(provider.website)}" target="_blank" rel="noopener">Website</a>` : ""}<a class="btn primary" href="${escapeHtml(provider.mapUrl)}" target="_blank" rel="noopener">Open map</a></div></article>`).join("") : `<div class="empty-care">No nearby providers were listed. Try a wider-area local search.</div>`;
+      status.textContent = data.providers.length ? `Found ${data.providers.length} nearby care options.` : "No nearby providers were listed.";
+    } catch (error) { status.textContent = error.message; }
+  }, () => { status.textContent = "Location permission was not granted. You can search a local hospital or doctor directly instead."; }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+}
 function renderProfile() { $("profile-page").innerHTML = `<div class="card panel profile-form"><span class="eyebrow">Account settings</span><h1 class="page-title">My profile</h1><p class="muted">Keep your basic information up to date.</p><div class="cols"><label>Full name<input id="profile-name" value="${escapeHtml(state.user.name)}"></label><label>Email<input value="${escapeHtml(state.user.email)}" disabled></label><label>Mobile number<input id="profile-mobile" value="${escapeHtml(state.user.mobile)}"></label><label>Age<input id="profile-age" type="number" value="${escapeHtml(state.user.age || "")}"></label><label>Gender<select id="profile-gender"><option ${state.user.gender === "" ? "selected" : ""}>Select</option><option ${state.user.gender === "Female" ? "selected" : ""}>Female</option><option ${state.user.gender === "Male" ? "selected" : ""}>Male</option><option ${state.user.gender === "Other" ? "selected" : ""}>Other</option></select></label></div><button class="btn primary" id="save-profile">Save profile changes</button></div>`; $("save-profile").addEventListener("click", async () => { const data = await api("/api/user/profile", { method:"PUT", body:{ name:$("profile-name").value, mobile:$("profile-mobile").value, age:$("profile-age").value, gender:$("profile-gender").value } }); state.user = data.user; toast("Profile changes saved"); }); }
 async function sendChat(event) { event.preventDefault(); const input = $("chat-input"); const text = input.value.trim(); if (!text) return; const messages = $("chat-messages"); messages.insertAdjacentHTML("beforeend", `<div class="bubble user">${escapeHtml(text)}</div>`); input.value = ""; try { const data = await api("/api/chat", { method:"POST", body:{ message:text } }); messages.insertAdjacentHTML("beforeend", `<div class="bubble bot">${escapeHtml(data.reply)}</div>`); messages.scrollTop = messages.scrollHeight; } catch { toast("Chat service unavailable"); } }
 document.addEventListener("click", (event) => { const route = event.target.closest("[data-route]")?.dataset.route; if (route) navigate(route); });
+(function setupTheme() {
+  const saved = localStorage.getItem("caresignal_theme");
+  if (saved === "dark") document.body.classList.add("dark");
+  const update = () => {
+    const icon = document.body.classList.contains("dark") ? "☀" : "☾";
+    $("theme-toggle").textContent = icon;
+    $("theme-toggle-app").textContent = icon;
+  };
+  const toggle = () => { document.body.classList.toggle("dark"); localStorage.setItem("caresignal_theme", document.body.classList.contains("dark") ? "dark" : "light"); update(); };
+  $("theme-toggle").addEventListener("click", toggle);
+  $("theme-toggle-app").addEventListener("click", toggle);
+  update();
+})();
 $("auth-form").addEventListener("submit", submitAuth); $("chat-form").addEventListener("submit", sendChat); $("chat-toggle").addEventListener("click", () => $("chat-panel").classList.toggle("hidden")); $("logout").addEventListener("click", async () => { await api("/api/auth/logout", { method:"POST" }).catch(() => {}); state.token = null; state.user = null; localStorage.removeItem("caresignal_token"); navigate("landing"); toast("You have been logged out"); });
 (async () => { await loadData(); navigate(state.user ? "dashboard" : "landing"); })();

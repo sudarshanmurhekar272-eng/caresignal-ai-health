@@ -14,6 +14,7 @@ const RULES = [
     symptoms: ["cold", "cough", "sore throat", "runny nose", "congestion", "sneezing"],
     description: "A common respiratory illness. Similar symptoms can have different causes and need professional evaluation when persistent or severe.",
     selfCare: ["Rest and drink adequate fluids.", "Monitor whether symptoms improve or worsen.", "Follow advice from a healthcare professional."],
+    prevention: "Wash hands regularly, avoid sharing drinks, and improve ventilation around people who are unwell.",
     contactDoctor: "Contact a healthcare professional if symptoms persist, worsen, or feel unusual for you.",
     emergencySigns: ["Severe difficulty breathing", "Blue lips or face", "Confusion or loss of consciousness"]
   },
@@ -22,6 +23,7 @@ const RULES = [
     symptoms: ["fever", "chills", "cough", "fatigue", "muscle pain", "body ache", "weakness"],
     description: "A flu-like symptom pattern. A clinician may need to assess the timing, severity, and possible causes.",
     selfCare: ["Rest and maintain hydration.", "Monitor temperature and changes in symptoms.", "Avoid close contact with others when acutely unwell."],
+    prevention: "Use good hand hygiene, improve ventilation, and follow locally appropriate seasonal health guidance.",
     contactDoctor: "Seek professional advice if fever is persistent, symptoms worsen, or you are in a higher-risk group.",
     emergencySigns: ["Severe breathing difficulty", "Chest pain", "Confusion or loss of consciousness"]
   },
@@ -30,6 +32,7 @@ const RULES = [
     symptoms: ["headache", "fatigue", "dizziness", "back pain", "muscle pain"],
     description: "A symptom pattern that can occur with tension or fatigue, but headaches have many possible causes.",
     selfCare: ["Rest in a quiet environment and maintain hydration.", "Notice triggers and changes in intensity.", "Arrange professional advice for new, severe, or recurring headaches."],
+    prevention: "Keep regular sleep and meal routines, take screen breaks, and note possible triggers.",
     contactDoctor: "Get medical advice for a sudden severe headache, neurological changes, injury, or persistent symptoms.",
     emergencySigns: ["Weakness on one side", "Difficulty speaking", "Loss of consciousness"]
   },
@@ -38,6 +41,7 @@ const RULES = [
     symptoms: ["nausea", "vomiting", "diarrhea", "abdominal pain", "loss of appetite", "weakness"],
     description: "A digestive symptom pattern. Dehydration and other causes should be considered by a professional.",
     selfCare: ["Take small, frequent sips of fluids if tolerated.", "Rest and monitor for dehydration.", "Seek advice if symptoms persist or you cannot keep fluids down."],
+    prevention: "Wash hands carefully and use safe food and water practices.",
     contactDoctor: "Contact a clinician for persistent vomiting or diarrhea, severe pain, blood, or signs of dehydration.",
     emergencySigns: ["Severe abdominal pain", "Fainting", "Blood in vomit or stool"]
   },
@@ -46,6 +50,7 @@ const RULES = [
     symptoms: ["sneezing", "runny nose", "skin rash", "cough", "congestion", "fatigue"],
     description: "A possible allergy-related pattern. New or severe reactions require urgent assessment.",
     selfCare: ["Reduce exposure to a suspected trigger where possible.", "Track when symptoms appear and change.", "Discuss persistent or recurring symptoms with a professional."],
+    prevention: "Track possible triggers and reduce exposure where practical, without making unverified assumptions about the cause.",
     contactDoctor: "Seek medical advice for persistent symptoms or a new reaction.",
     emergencySigns: ["Swelling of lips or tongue", "Severe difficulty breathing", "Fainting"]
   }
@@ -74,6 +79,7 @@ export function predict(input = {}) {
     symptoms,
     description: best.description,
     selfCare: best.selfCare,
+    prevention: best.prevention,
     contactDoctor: best.contactDoctor,
     emergencySigns: best.emergencySigns,
     urgent: urgentSymptoms.length > 0,
